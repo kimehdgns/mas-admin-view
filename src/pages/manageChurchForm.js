@@ -1,7 +1,8 @@
 import React from 'react';
-import {Container, Header, Icon, Menu, Table, Input} from 'semantic-ui-react'
+import {Container, Header, Table, Input} from 'semantic-ui-react';
 import ChurchModal from 'components/modals/churchModal';
 import ChurchList from 'components/church/churchList';
+import Pagination from 'components/common/pagination';
 import * as service from 'services/axios';
 
 export default class ManageChurchForm extends React.Component {
@@ -10,26 +11,33 @@ export default class ManageChurchForm extends React.Component {
 
         this.state = {
             isFetching: false,
-            churchList: []
+            currentPage : 1,
+            churchListPerPage: 10,
+            churchList: [],
+            churchListCount : 0
         };
 
         this.handleKeyPress = this.handleKeyPress.bind(this);
     }
 
     componentDidMount() {
-        this.fetchChurchList('');
+        this.fetchChurchList(1);
     }
 
-    fetchChurchList = async (searchValue) => {
+    fetchChurchList = async (page) => {
+        let searchValue = document.getElementById("churchSearchValue").value;
         this.setState({isFetching: true});
 
         const churchListInfo = await Promise.all([
-            service.getChurchList(searchValue),
+            service.getChurchList(searchValue, page),
         ]);
 
         this.setState({
             isFetching: true,
-            churchList: churchListInfo[0].data
+            currentPage: page,
+            churchListPerPage: churchListInfo[0].data.perPage,
+            churchList: churchListInfo[0].data.list,
+            churchListCount : churchListInfo[0].data.count
         });
 
         document.getElementById("churchSearchValue").select();
@@ -37,8 +45,7 @@ export default class ManageChurchForm extends React.Component {
 
     handleKeyPress(e) {
         if(e.charCode === 13){
-            let searchValue = document.getElementById("churchSearchValue").value;
-            this.fetchChurchList(searchValue);
+            this.fetchChurchList(1);
         }
     }
 
@@ -75,18 +82,11 @@ export default class ManageChurchForm extends React.Component {
                         <Table.Footer>
                             <Table.Row>
                                 <Table.HeaderCell colSpan='6'>
-                                    <Menu floated='right' pagination>
-                                        <Menu.Item as='a' icon>
-                                            <Icon name='chevron left'/>
-                                        </Menu.Item>
-                                        <Menu.Item as='a'>1</Menu.Item>
-                                        <Menu.Item as='a'>2</Menu.Item>
-                                        <Menu.Item as='a'>3</Menu.Item>
-                                        <Menu.Item as='a'>4</Menu.Item>
-                                        <Menu.Item as='a' icon>
-                                            <Icon name='chevron right'/>
-                                        </Menu.Item>
-                                    </Menu>
+                                    <Pagination count={this.state.churchListCount}
+                                        page={this.state.currentPage}
+                                        perPage={this.state.churchListPerPage}
+                                        onPageClick={this.fetchChurchList}
+                                    />
                                 </Table.HeaderCell>
                             </Table.Row>
                         </Table.Footer>
